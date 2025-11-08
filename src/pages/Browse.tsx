@@ -334,13 +334,27 @@ const Browse = () => {
             <>
               {/* Map View */}
               {viewMode === "map" && (
-                <div className="h-[500px] rounded-lg overflow-hidden border bg-card">
-                  <MapView
-                    locations={getMapPoints()}
-                    center={[40.7589, -73.9851]} // New York City center
-                    zoom={11}
-                    height="500px"
-                  />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>📍 {getMapPoints().length} items on map</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                      Lost
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                      Found
+                    </span>
+                  </div>
+                  <div className="h-[600px] w-full rounded-lg overflow-hidden border-2 border-gray-200 shadow-lg bg-white">
+                    <MapView
+                      locations={getMapPoints()}
+                      center={[40.7589, -73.9851]} // New York City center
+                      zoom={11}
+                      height="600px"
+                    />
+                  </div>
                 </div>
               )}
 

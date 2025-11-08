@@ -303,12 +303,12 @@ const ItemDetail = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-64 rounded-lg overflow-hidden">
+                  <div className="h-80 rounded-lg overflow-hidden border-2 border-gray-200 shadow-lg bg-white">
                     <MapView
                       locations={getMapItems()}
                       center={[item.latitude, item.longitude]}
                       zoom={15}
-                      height="16rem"
+                      height="320px"
                     />
                   </div>
                 </CardContent>

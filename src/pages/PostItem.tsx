@@ -390,6 +390,42 @@ const PostItem = () => {
                       Use Current Location
                     </Button>
                   </div>
+
+                  {/* Interactive Map Location Picker */}
+                  <div className="space-y-3">
+                    <Label className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      Click on map to set exact location
+                    </Label>
+                    <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-lg bg-white">
+                      <MapView
+                        center={[latitude, longitude]}
+                        zoom={13}
+                        height="350px"
+                        editable={true}
+                        onLocationSelect={(location) => {
+                          setLatitude(location.latitude);
+                          setLongitude(location.longitude);
+                          toast({
+                            title: "📍 Location set",
+                            description: `Location set to ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`,
+                          });
+                        }}
+                        locations={[{
+                          id: "selected",
+                          lat: latitude,
+                          lng: longitude,
+                          title: `${itemType === "lost" ? "Lost" : "Found"} Location`,
+                          address: "Click anywhere on map to change location",
+                          type: itemType,
+                          category: "Location Picker"
+                        }]}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground bg-gray-50 p-2 rounded">
+                      <strong>Selected:</strong> {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">

@@ -115,12 +115,19 @@ export const MapView: React.FC<MapViewProps> = ({
   );
 
   return (
-    <div className={`${height} w-full overflow-hidden rounded-lg`}>
+    <div className={`${height} w-full overflow-hidden rounded-lg border bg-white`}>
       <MapContainer
         center={center}
         zoom={zoom}
-        style={{ height: "100%", width: "100%", minHeight: "400px" }}
-        className="rounded-lg z-0"
+        style={{ 
+          height: "100%", 
+          width: "100%", 
+          minHeight: "300px",
+          borderRadius: "8px"
+        }}
+        className="rounded-lg"
+        scrollWheelZoom={true}
+        attributionControl={true}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
