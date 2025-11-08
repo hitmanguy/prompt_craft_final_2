@@ -128,9 +128,10 @@ Copy code
 npm run dev
 Then visit your local environment:
 
-arduino
 Copy code
 http://localhost:3000
+```
+
 ✅ You’re all set! iLost will start with the map feature, AI categorization, and all the smart matching features enabled.
 
 🧩 Tech Stack
