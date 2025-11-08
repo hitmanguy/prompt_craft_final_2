@@ -390,44 +390,6 @@ const PostItem = () => {
                       Use Current Location
                     </Button>
                   </div>
-
-                  {/* Interactive Map Location Picker */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4" />
-                      Click on map to set exact location
-                    </Label>
-                    <div className="border rounded-lg overflow-hidden">
-                      <MapView
-                        center={[latitude, longitude]}
-                        zoom={13}
-                        height="300px"
-                        editable={true}
-                        onLocationSelect={(location) => {
-                          setLatitude(location.latitude);
-                          setLongitude(location.longitude);
-                          toast({
-                            title: "Location set",
-                            description: `Location set to ${location.latitude.toFixed(
-                              4
-                            )}, ${location.longitude.toFixed(4)}`,
-                          });
-                        }}
-                        locations={[
-                          {
-                            id: "selected",
-                            lat: latitude,
-                            lng: longitude,
-                            title: "Selected Location",
-                            address: "Click anywhere on map to change location",
-                          },
-                        ]}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Current: {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                    </p>
-                  </div>
                 </div>
 
                 <div className="space-y-2">
