@@ -4,37 +4,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { z } from "zod";
+import { Upload, MapPin } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { Upload } from "lucide-react";
+import { MapView } from "@/components/Map/MapView";
 
-const CATEGORIES = ["Electronics", "Documents", "Accessories", "Bags", "Keys", "Pets", "Other"];
-
-const itemSchema = z.object({
-  type: z.enum(["lost", "found"]),
-  itemName: z.string().min(2, "Item name must be at least 2 characters").max(100),
-  description: z.string().min(10, "Description must be at least 10 characters").max(1000),
-  category: z.string().min(1, "Please select a category"),
-  locationAddress: z.string().max(200).optional(),
-  locationCity: z.string().min(2, "City is required").max(100),
-  locationCountry: z.string().min(2, "Country is required").max(100),
-  itemDate: z.string().min(1, "Date is required"),
-  contactName: z.string().min(2, "Contact name is required").max(100),
-  contactPhone: z.string().max(20).optional(),
-  contactEmail: z.string().email("Invalid email address").max(255),
-});
+const CATEGORIES = [
+  "Electronics",
+  "Documents",
+  "Accessories",
+  "Bags",
+  "Keys",
+  "Pets",
+  "Jewelry",
+  "Clothing",
+  "Sports",
+  "Books",
+  "Toys",
+  "Other",
+];
 
 const PostItem = () => {
   const [loading, setLoading] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [itemType, setItemType] = useState<"lost" | "found">("found");
+  const [latitude, setLatitude] = useState<number>(40.7831); // Default to NYC
+  const [longitude, setLongitude] = useState<number>(-73.9712);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -61,13 +75,24 @@ const PostItem = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!user) return;
-    
+
+    console.log("Form submission started");
+    console.log("User:", user);
+
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to post an item",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
     const data = {
-      type: formData.get("type") as "lost" | "found",
+      type: formData.get("type") as string,
       itemName: formData.get("itemName") as string,
       description: formData.get("description") as string,
       category: formData.get("category") as string,
@@ -80,51 +105,66 @@ const PostItem = () => {
       contactEmail: formData.get("contactEmail") as string,
     };
 
-    try {
-      const validation = itemSchema.parse(data);
+    console.log("Form data:", data);
 
+    try {
+      // Upload image if provided
       let imageUrl = null;
       if (imageFile) {
+        console.log("Uploading image:", imageFile.name);
         const fileExt = imageFile.name.split(".").pop();
         const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from("item-images")
           .upload(fileName, imageFile);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          throw uploadError;
+        }
 
         const { data: urlData } = supabase.storage
           .from("item-images")
           .getPublicUrl(fileName);
-        
+
         imageUrl = urlData.publicUrl;
+        console.log("Image uploaded:", imageUrl);
       }
 
+      console.log("Inserting item into database...");
       const { error } = await supabase.from("items").insert({
         user_id: user.id,
-        type: validation.type,
-        item_name: validation.itemName,
-        description: validation.description,
-        category: validation.category,
-        location_address: validation.locationAddress || null,
-        location_city: validation.locationCity,
-        location_country: validation.locationCountry,
-        item_date: validation.itemDate,
-        contact_name: validation.contactName,
-        contact_phone: validation.contactPhone || null,
-        contact_email: validation.contactEmail,
+        type: data.type,
+        item_name: data.itemName,
+        description: data.description,
+        category: data.category,
+        location_address: data.locationAddress || null,
+        location_city: data.locationCity,
+        location_country: data.locationCountry,
+        // latitude: latitude,  // Temporarily disabled until DB migration
+        // longitude: longitude, // Temporarily disabled until DB migration
+        item_date: data.itemDate,
+        contact_name: data.contactName,
+        contact_phone: data.contactPhone || null,
+        contact_email: data.contactEmail,
         image_url: imageUrl,
+        status: "active",
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Database insert error:", error);
+        throw error;
+      }
 
+      console.log("Item posted successfully!");
       toast({
         title: "Success!",
-        description: "Your item has been posted successfully.",
+        description: `Your ${data.type} item has been posted successfully.`,
       });
       navigate("/browse");
     } catch (error: any) {
+      console.error("Error posting item:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to post item",
@@ -139,13 +179,13 @@ const PostItem = () => {
     <ProtectedRoute>
       <div className="min-h-screen bg-background">
         <Navbar />
-        
+
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Post an Item</CardTitle>
               <CardDescription>
-                Report a lost or found item to help reconnect it with its owner
+                Report a lost or found item to help reconnect it with its owner.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -153,16 +193,29 @@ const PostItem = () => {
                 {/* Type Selection */}
                 <div className="space-y-3">
                   <Label>Item Status *</Label>
-                  <RadioGroup name="type" defaultValue="found" required>
+                  <RadioGroup
+                    name="type"
+                    value={itemType}
+                    onValueChange={(value) =>
+                      setItemType(value as "lost" | "found")
+                    }
+                    required
+                  >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="found" id="found" />
-                      <Label htmlFor="found" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="found"
+                        className="font-normal cursor-pointer"
+                      >
                         I found this item
                       </Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="lost" id="lost" />
-                      <Label htmlFor="lost" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="lost"
+                        className="font-normal cursor-pointer"
+                      >
                         I lost this item
                       </Label>
                     </div>
@@ -175,13 +228,14 @@ const PostItem = () => {
                   <Input
                     id="itemName"
                     name="itemName"
-                    placeholder="e.g., Green backpack"
+                    placeholder="e.g., Green backpack, iPhone 14, Car keys"
                     required
                   />
                 </div>
 
+                {/* Category Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="category">Category *</Label>
+                  <Label>Category *</Label>
                   <Select name="category" required>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a category" />
@@ -201,13 +255,13 @@ const PostItem = () => {
                   <Textarea
                     id="description"
                     name="description"
-                    placeholder="Provide detailed description of the item..."
+                    placeholder="Provide detailed description: color, size, brand, distinctive features, where/when found/lost..."
                     rows={4}
                     required
                   />
                 </div>
 
-                {/* Image Upload */}
+                {/* Photo Upload */}
                 <div className="space-y-2">
                   <Label htmlFor="image">Photo of the Item</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
@@ -249,7 +303,7 @@ const PostItem = () => {
                   </div>
                 </div>
 
-                {/* Location */}
+                {/* Location Information */}
                 <div className="space-y-4">
                   <h3 className="font-semibold">Location Information</h3>
                   <div className="space-y-2">
@@ -280,15 +334,107 @@ const PostItem = () => {
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="itemDate">Date *</Label>
-                    <Input
-                      id="itemDate"
-                      name="itemDate"
-                      type="date"
-                      required
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="latitude">Latitude</Label>
+                      <Input
+                        id="latitude"
+                        type="number"
+                        step="any"
+                        value={latitude}
+                        onChange={(e) =>
+                          setLatitude(parseFloat(e.target.value) || 40.7831)
+                        }
+                        placeholder="40.7831"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="longitude">Longitude</Label>
+                      <Input
+                        id="longitude"
+                        type="number"
+                        step="any"
+                        value={longitude}
+                        onChange={(e) =>
+                          setLongitude(parseFloat(e.target.value) || -73.9712)
+                        }
+                        placeholder="-73.9712"
+                      />
+                    </div>
                   </div>
+                  <div className="text-sm text-muted-foreground">
+                    <p>
+                      📍 Use your device location or enter coordinates manually.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => {
+                        if ("geolocation" in navigator) {
+                          navigator.geolocation.getCurrentPosition(
+                            (position) => {
+                              setLatitude(position.coords.latitude);
+                              setLongitude(position.coords.longitude);
+                              toast({
+                                title: "Location updated",
+                                description:
+                                  "Your current location has been set.",
+                              });
+                            }
+                          );
+                        }
+                      }}
+                    >
+                      Use Current Location
+                    </Button>
+                  </div>
+
+                  {/* Interactive Map Location Picker */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      Click on map to set exact location
+                    </Label>
+                    <div className="border rounded-lg overflow-hidden">
+                      <MapView
+                        center={[latitude, longitude]}
+                        zoom={13}
+                        height="300px"
+                        editable={true}
+                        onLocationSelect={(location) => {
+                          setLatitude(location.latitude);
+                          setLongitude(location.longitude);
+                          toast({
+                            title: "Location set",
+                            description: `Location set to ${location.latitude.toFixed(
+                              4
+                            )}, ${location.longitude.toFixed(4)}`,
+                          });
+                        }}
+                        locations={[
+                          {
+                            id: "selected",
+                            lat: latitude,
+                            lng: longitude,
+                            title: "Selected Location",
+                            address: "Click anywhere on map to change location",
+                          },
+                        ]}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Current: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="itemDate">
+                    Date {itemType === "lost" ? "Lost" : "Found"} *
+                  </Label>
+                  <Input id="itemDate" name="itemDate" type="date" required />
                 </div>
 
                 {/* Contact Information */}
@@ -311,6 +457,9 @@ const PostItem = () => {
                       type="tel"
                       placeholder="+1 234 567 8900"
                     />
+                    <p className="text-sm text-muted-foreground">
+                      Your phone will be masked as 98******42 in public listings
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contactEmail">Email Address *</Label>
@@ -321,11 +470,17 @@ const PostItem = () => {
                       placeholder="you@example.com"
                       required
                     />
+                    <p className="text-sm text-muted-foreground">
+                      Your email will be masked as jo****@ex*****.com in public
+                      listings
+                    </p>
                   </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Posting..." : "Post Item"}
+                  {loading
+                    ? "Posting..."
+                    : `Post ${itemType === "lost" ? "Lost" : "Found"} Item`}
                 </Button>
               </form>
             </CardContent>

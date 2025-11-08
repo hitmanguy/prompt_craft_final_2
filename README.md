@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# ReUniteMe - Lost & Found Platform
 
 ## Project info
 
