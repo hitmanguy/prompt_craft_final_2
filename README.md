@@ -2,6 +2,9 @@ Build a web-based Lost & Found platform with a clean, modern, and mobile-friendl
 The platform should allow users to sign up, log in, report lost or found items, browse existing posts, and reconnect people with their belongings.
 Implement all the following features in full detail:
 
+to run: npm install; npm run build ; npm run start or npm run dev
+we implemeneted a map feature which laods the longitude and latitude values in database, and we can see exactly where the item was found
+
 🧩 CORE FEATURES
 
 User authentication (sign up, login, logout, password reset, email verification)
